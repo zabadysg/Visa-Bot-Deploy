@@ -465,10 +465,7 @@
     </div>
 
     <script>
-        // Detect if we're on HTTPS and adjust API endpoint accordingly
-        const isHTTPS = window.location.protocol === 'https:';
-        const API_BASE = isHTTPS ? 'https://34.42.118.233:8000' : 'http://34.42.118.233:8000';
-        
+        const API_BASE = 'http:/34.42.118.233:8000';
         let isStreaming = true;
         let currentCountry = '';
         let isLoading = false;
@@ -836,7 +833,6 @@ Your conversation will be saved in this session for continuity.`);
             // Return as-is if no code blocks found
             return text;
         }
-
         function updateBotMessage(messageId, content) {
             const messageDiv = document.getElementById(messageId);
             if (messageDiv) {
