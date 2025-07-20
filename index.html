@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VISA-BOT - French Student Visa Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .session-info {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 0.8rem;
+            opacity: 0.8;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+        }
+
+        .controls {
+            background: #f8fafc;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .country-select {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .country-select select {
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .country-select select:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+
+        .streaming-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 25px;
+            background: #cbd5e1;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #4f46e5;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 21px;
+            height: 21px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(25px);
+        }
+
+        .session-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .session-button {
+            padding: 6px 10px;
+            background: #6366f1;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .session-button:hover {
+            background: #4f46e5;
+        }
+
+        .session-button.danger {
+            background: #ef4444;
+        }
+
+        .session-button.danger:hover {
+            background: #dc2626;
+        }
+
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-content {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 1rem;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-content {
+            background: #4f46e5;
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            color: #374151;
+            border: 1px solid #e2e8f0;
+            border-bottom-left-radius: 5px;
+        }
+
+        .message-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .message.bot .message-avatar {
+            background: #f1f5f9;
+            color: #4f46e5;
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 12px 16px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            border-bottom-left-radius: 5px;
+            max-width: 80px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #94a3b8;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .input-field {
+            flex: 1;
+            min-height: 20px;
+            max-height: 120px;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 20px;
+            font-size: 1rem;
+            resize: none;
+            outline: none;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        .input-field:focus {
+            border-color: #4f46e5;
+        }
+
+        .send-button {
+            padding: 12px 20px;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            min-width: 80px;
+            justify-content: center;
+        }
+
+        .send-button:hover:not(:disabled) {
+            background: #4338ca;
+            transform: translateY(-1px);
+        }
+
+        .send-button:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .history-button {
+            padding: 8px 12px;
+            background: #64748b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .history-button:hover {
+            background: #475569;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+        }
+
+        .error-message {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #dc2626;
+        }
+
+        .success-message {
+            background: #f0fdf4;
+            color: #16a34a;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #16a34a;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                height: 100vh;
+                border-radius: 0;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .message-content {
+                max-width: 90%;
+            }
+
+            .session-info {
+                position: static;
+                align-items: center;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="session-info">
+                <div id="sessionId">Session: Loading...</div>
+                <div id="sessionTime">Created: --</div>
+            </div>
+            <h1>🎓 VISA-BOT 🇫🇷</h1>
+            <p>Your French Student Visa Assistant</p>
+        </div>
+
+        <div class="controls">
+            <div class="country-select">
+                <label for="country">Country:</label>
+                <select id="country">
+                    <option value="">Select Country...</option>
+                </select>
+            </div>
+
+            <div class="streaming-toggle">
+                <label>Streaming:</label>
+                <div class="toggle-switch active" id="streamingToggle"></div>
+                <span id="streamingStatus">ON</span>
+            </div>
+
+            <div class="session-controls">
+                <button class="session-button" onclick="createNewSession()">🔄 New Session</button>
+                <button class="session-button danger" onclick="clearSession()">🗑️ Clear</button>
+            </div>
+
+            <button class="history-button" onclick="toggleHistory()">📝 History</button>
+
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Connected</span>
+            </div>
+        </div>
+
+        <div class="chat-area" id="chatArea">
+            <div class="message bot">
+                <div class="message-avatar">🤖</div>
+                <div class="message-content">
+                    Hello! I'm VISA-BOT, your French student visa assistant. 👋<br><br>
+                    I can help you with:<br>
+                    • Administrative documents<br>
+                    • Academic requirements<br>
+                    • Financial documents<br>
+                    • Accommodation requirements<br><br>
+                    Please select your country and ask me anything!<br><br>
+                    <small>💡 Each conversation is saved in your session for continuity.</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-container">
+                <textarea 
+                    id="messageInput" 
+                    class="input-field" 
+                    placeholder="Ask me about French student visa requirements..."
+                    rows="1"
+                ></textarea>
+                <button id="sendButton" class="send-button" onclick="sendMessage()">
+                    <span id="sendText">Send</span>
+                    <span id="sendIcon">🚀</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http:/34.42.118.233:8000';
+        let isStreaming = true;
+        let currentCountry = '';
+        let isLoading = false;
+        let currentSessionId = null;
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSession();
+            loadCountries();
+            setupEventListeners();
+            checkAPIHealth();
+        });
+
+        // Session Management
+        async function initializeSession() {
+            // Try to get existing session from localStorage
+            const storedSessionId = localStorage.getItem('visa_bot_session_id');
+            
+            if (storedSessionId) {
+                // Validate existing session
+                try {
+                    const response = await fetch(`${API_BASE}/sessions/${storedSessionId}`);
+                    if (response.ok) {
+                        const sessionInfo = await response.json();
+                        currentSessionId = storedSessionId;
+                        updateSessionDisplay(sessionInfo);
+                        return;
+                    }
+                } catch (error) {
+                    console.log('Stored session is invalid, creating new one');
+                }
+            }
+            
+            // Create new session
+            await createNewSession();
+        }
+
+        async function createNewSession() {
+            try {
+                const response = await fetch(`${API_BASE}/sessions`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const sessionData = await response.json();
+                    currentSessionId = sessionData.session_id;
+                    localStorage.setItem('visa_bot_session_id', currentSessionId);
+                    
+                    updateSessionDisplay({
+                        session_id: currentSessionId,
+                        created_at: sessionData.created_at,
+                        last_activity: sessionData.created_at,
+                        countries_used: [],
+                        total_messages: 0
+                    });
+                    
+                    clearChat();
+                    showSuccess('New session created! Your conversation history has been reset.');
+                } else {
+                    throw new Error('Failed to create session');
+                }
+            } catch (error) {
+                console.error('Error creating session:', error);
+                showError('Failed to create new session. Using temporary session.');
+                currentSessionId = 'temp_' + Date.now();
+            }
+        }
+
+        async function clearSession() {
+            if (!currentSessionId || !currentCountry) {
+                showError('Please select a country first.');
+                return;
+            }
+
+            if (confirm('This will clear your conversation history for the current country. Continue?')) {
+                try {
+                    const response = await fetch(`${API_BASE}/clear-history/${currentSessionId}/${currentCountry}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        clearChat();
+                        showSuccess('Conversation history cleared for current country.');
+                    } else {
+                        throw new Error('Failed to clear history');
+                    }
+                } catch (error) {
+                    console.error('Error clearing history:', error);
+                    showError('Failed to clear conversation history.');
+                }
+            }
+        }
+
+        function updateSessionDisplay(sessionInfo) {
+            const sessionIdElement = document.getElementById('sessionId');
+            const sessionTimeElement = document.getElementById('sessionTime');
+            
+            // Show short session ID
+            const shortId = sessionInfo.session_id.substring(0, 8) + '...';
+            sessionIdElement.textContent = `Session: ${shortId}`;
+            
+            // Format creation time
+            const createdTime = new Date(sessionInfo.created_at).toLocaleTimeString();
+            sessionTimeElement.textContent = `Created: ${createdTime}`;
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            const messageInput = document.getElementById('messageInput');
+            const sendButton = document.getElementById('sendButton');
+            const streamingToggle = document.getElementById('streamingToggle');
+            const countrySelect = document.getElementById('country');
+
+            // Auto-resize textarea
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            });
+
+            // Send on Enter (but not Shift+Enter)
+            messageInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // Streaming toggle
+            streamingToggle.addEventListener('click', function() {
+                isStreaming = !isStreaming;
+                this.classList.toggle('active', isStreaming);
+                document.getElementById('streamingStatus').textContent = isStreaming ? 'ON' : 'OFF';
+            });
+
+            // Country selection
+            countrySelect.addEventListener('change', function() {
+                currentCountry = this.value;
+                if (currentCountry) {
+                    clearChat();
+                    addBotMessage(`Selected: ${this.options[this.selectedIndex].text}. How can I help you with your French student visa? 
+                    
+Your conversation will be saved in this session for continuity.`);
+                }
+            });
+        }
+
+        // Load available countries
+        async function loadCountries() {
+            try {
+                const response = await fetch(`${API_BASE}/countries`);
+                const data = await response.json();
+                
+                const countrySelect = document.getElementById('country');
+                countrySelect.innerHTML = '<option value="">Select Country...</option>';
+                
+                Object.entries(data.countries).forEach(([key, country]) => {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = `${country.flag} ${country.name}`;
+                    countrySelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading countries:', error);
+                showError('Failed to load countries. Please check if the API server is running.');
+            }
+        }
+
+        // Check API health
+        async function checkAPIHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                const statusDot = document.getElementById('statusDot');
+                const statusText = document.getElementById('statusText');
+                
+                if (data.status === 'healthy') {
+                    statusDot.style.background = '#10b981';
+                    statusText.textContent = `Connected (${data.active_sessions} sessions)`;
+                } else {
+                    statusDot.style.background = '#f59e0b';
+                    statusText.textContent = 'Issues';
+                }
+            } catch (error) {
+                const statusDot = document.getElementById('statusDot');
+                const statusText = document.getElementById('statusText');
+                statusDot.style.background = '#ef4444';
+                statusText.textContent = 'Offline';
+            }
+        }
+
+        // Send message
+        async function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message) return;
+            if (!currentCountry) {
+                showError('Please select a country first.');
+                return;
+            }
+            if (isLoading) return;
+            if (!currentSessionId) {
+                showError('Session not initialized. Please refresh the page.');
+                return;
+            }
+
+            // Add user message to chat
+            addUserMessage(message);
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+
+            // Set loading state
+            setLoading(true);
+
+            try {
+                if (isStreaming) {
+                    await sendStreamingMessage(message);
+                } else {
+                    await sendRegularMessage(message);
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showError('Failed to send message. Please try again.');
+            }
+
+            setLoading(false);
+        }
+
+        // Send regular message
+        async function sendRegularMessage(message) {
+            const response = await fetch(`${API_BASE}/chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message,
+                    country: currentCountry,
+                    session_id: currentSessionId
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const parsedResponse = parseMarkdownResponse(data.response);
+            addBotMessage(parsedResponse);
+            
+            // Update session if returned
+            if (data.session_id && data.session_id !== currentSessionId) {
+                currentSessionId = data.session_id;
+                localStorage.setItem('visa_bot_session_id', currentSessionId);
+            }
+        }
+
+        // Send streaming message
+        async function sendStreamingMessage(message) {
+            // Add typing indicator
+            const typingId = addTypingIndicator();
+
+            const response = await fetch(`${API_BASE}/chat/stream`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message,
+                    country: currentCountry,
+                    session_id: currentSessionId
+                })
+            });
+
+            if (!response.ok) {
+                removeTypingIndicator(typingId);
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            
+            // Remove typing indicator and start bot message
+            removeTypingIndicator(typingId);
+            const messageId = addBotMessage('', true); // streaming = true
+
+            let fullResponse = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const token = line.slice(6);
+                        if (token === '[DONE]') {
+                            return;
+                        }
+                        if (token.startsWith('Error:')) {
+                            throw new Error(token);
+                        }
+                        fullResponse += token;
+                        const parsedResponse = parseMarkdownResponse(fullResponse);
+                        updateBotMessage(messageId, parsedResponse);
+                    } else if (line.startsWith('event: session')) {
+                        const sessionLine = lines[lines.indexOf(line) + 1];
+                        if (sessionLine && sessionLine.startsWith('data: ')) {
+                            const newSessionId = sessionLine.slice(6);
+                            if (newSessionId !== currentSessionId) {
+                                currentSessionId = newSessionId;
+                                localStorage.setItem('visa_bot_session_id', currentSessionId);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Add user message to chat
+        function addUserMessage(message) {
+            const chatArea = document.getElementById('chatArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user';
+            messageDiv.innerHTML = `
+                <div class="message-avatar">👤</div>
+                <div class="message-content">${escapeHtml(message)}</div>
+            `;
+            chatArea.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        // Add bot message to chat
+        function addBotMessage(message, streaming = false) {
+            const chatArea = document.getElementById('chatArea');
+            const messageDiv = document.createElement('div');
+            const messageId = 'bot-message-' + Date.now();
+            messageDiv.id = messageId;
+            messageDiv.className = 'message bot';
+            messageDiv.innerHTML = `
+                <div class="message-avatar">🤖</div>
+                <div class="message-content">${streaming ? '' : message}</div>
+            `;
+            chatArea.appendChild(messageDiv);
+            scrollToBottom();
+            return messageId;
+        }
+
+        function parseMarkdownResponse(text) {
+            // Check if response is wrapped in ```html code block
+            const htmlBlockMatch = text.match(/```html\s*([\s\S]*?)\s*```/);
+            if (htmlBlockMatch) {
+                return htmlBlockMatch[1].trim();
+            }
+            
+            // Check for other code blocks and return as plain text
+            const codeBlockMatch = text.match(/```[\w]*\s*([\s\S]*?)\s*```/);
+            if (codeBlockMatch) {
+                return codeBlockMatch[1].trim();
+            }
+            
+            // Return as-is if no code blocks found
+            return text;
+        }
+        function updateBotMessage(messageId, content) {
+            const messageDiv = document.getElementById(messageId);
+            if (messageDiv) {
+                const contentDiv = messageDiv.querySelector('.message-content');
+                contentDiv.innerHTML = content;
+                scrollToBottom();
+            }
+        }
+
+        // Add typing indicator
+        function addTypingIndicator() {
+            const chatArea = document.getElementById('chatArea');
+            const typingDiv = document.createElement('div');
+            const typingId = 'typing-' + Date.now();
+            typingDiv.id = typingId;
+            typingDiv.className = 'message bot';
+            typingDiv.innerHTML = `
+                <div class="message-avatar">🤖</div>
+                <div class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            chatArea.appendChild(typingDiv);
+            scrollToBottom();
+            return typingId;
+        }
+
+        // Remove typing indicator
+        function removeTypingIndicator(typingId) {
+            const typingDiv = document.getElementById(typingId);
+            if (typingDiv) {
+                typingDiv.remove();
+            }
+        }
+
+        // Set loading state
+        function setLoading(loading) {
+            isLoading = loading;
+            const sendButton = document.getElementById('sendButton');
+            const sendText = document.getElementById('sendText');
+            const sendIcon = document.getElementById('sendIcon');
+            
+            sendButton.disabled = loading;
+            if (loading) {
+                sendText.textContent = 'Sending...';
+                sendIcon.textContent = '⏳';
+            } else {
+                sendText.textContent = 'Send';
+                sendIcon.textContent = '🚀';
+            }
+        }
+
+        // Toggle history
+        async function toggleHistory() {
+            if (!currentCountry || !currentSessionId) {
+                showError('Please select a country first.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/history/${currentSessionId}/${currentCountry}`);
+                const data = await response.json();
+                
+                if (data.history.length === 0) {
+                    addBotMessage('No conversation history found for this country in the current session.');
+                    return;
+                }
+
+                let historyText = `📝 Session History for ${data.country} (${data.total_pairs} exchanges):\n\n`;
+                data.history.forEach((item, index) => {
+                    const timestamp = new Date(item.timestamp).toLocaleTimeString();
+                    historyText += `${index + 1}. [${timestamp}] You: ${item.user_message}\n`;
+                    historyText += `   Bot: ${item.ai_response.substring(0, 100)}${item.ai_response.length > 100 ? '...' : ''}\n\n`;
+                });
+
+                addBotMessage(historyText);
+            } catch (error) {
+                console.error('Error fetching history:', error);
+                showError('Failed to fetch conversation history.');
+            }
+        }
+
+        // Clear chat
+        function clearChat() {
+            const chatArea = document.getElementById('chatArea');
+            const messages = chatArea.querySelectorAll('.message:not(:first-child)');
+            messages.forEach(message => message.remove());
+        }
+
+        // Show error message
+        function showError(message) {
+            const chatArea = document.getElementById('chatArea');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            chatArea.appendChild(errorDiv);
+            scrollToBottom();
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (errorDiv.parentNode) {
+                    errorDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // Show success message
+        function showSuccess(message) {
+            const chatArea = document.getElementById('chatArea');
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success-message';
+            successDiv.textContent = message;
+            chatArea.appendChild(successDiv);
+            scrollToBottom();
+            
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                if (successDiv.parentNode) {
+                    successDiv.remove();
+                }
+            }, 3000);
+        }
+
+        // Utility functions
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function scrollToBottom() {
+            const chatArea = document.getElementById('chatArea');
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        // Periodic health check and session refresh
+        setInterval(checkAPIHealth, 30000); // Check every 30 seconds
+        
+        // Refresh session info every 5 minutes
+        setInterval(async () => {
+            if (currentSessionId && currentSessionId.startsWith('temp_') === false) {
+                try {
+                    const response = await fetch(`${API_BASE}/sessions/${currentSessionId}`);
+                    if (response.ok) {
+                        const sessionInfo = await response.json();
+                        updateSessionDisplay(sessionInfo);
+                    }
+                } catch (error) {
+                    console.log('Session refresh failed:', error);
+                }
+            }
+        }, 300000);
+    </script>
+</body>
+</html>
